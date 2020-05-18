@@ -4,50 +4,45 @@ from dash.dependencies import Output, Input
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly
-import random
 import plotly.graph_objs as go
-import requests
+import sqlite3
 import pandas as pd
 import numpy as np
 import os 
-import time
 
 port = 8090
 debug = True
+file = open('./tickers.txt')
+tickerList = file.read().split('\n')
+tickerList = [i for i in tickerList if i != '']
 
 app = dash.Dash(__name__)
 app.layout = html.Div([
-        dcc.Input(
-            id='ticker_input',
-            placeholder='Enter a ticker...',
-            type='text',
-            value='SPY'
-        ),
+        dcc.Dropdown(
+                id='ticker_select',
+                options=[{'label': v, 'value': v} for v in tickerList],
+                multi=True,
+                value='Tickers',
+            ),
         dcc.Graph(id='graph')
     ])
 
 
-@app.callback(Output('graph', 'figure'),[Input('ticker_input', 'value')])
+@app.callback(Output('graph', 'figure'),[Input('ticker_select', 'value')])
 def update_graph_scatter(input_ticker):
-    AV_KEY = os.environ['av_key']
-    url = ('https://www.alphavantage.co/query?'
-                    'function=TIME_SERIES_DAILY&'
-                    'symbol={0}&'
-                    'apikey={1}'.format(input_ticker,AV_KEY))
-    response = requests.get(url).json()
-    time.sleep(3)
-    df = pd.DataFrame(response['Time Series (Daily)']).transpose()
-    df['symbol'] = response['Meta Data']['2. Symbol']
-    df = df.reset_index()
-    df = df.sort_values('index')
-    df.columns = ['date','open','high','low','close','volume','ticker']
+    conn = sqlite3.connect('./fin_app.db')
+    df = pd.read_sql_query('select * from daily_data',conn)
     df['date'] = pd.to_datetime(df['date'])
     df['close'] = pd.to_numeric(df['close'])
+    tickerList = list(df['ticker'].drop_duplicates())
 
     data = []
     trace1 = []
+
+    if input_ticker is None:
+        input_ticker = ['SPY']
     
-    for i in ['SPY']:
+    for i in input_ticker:
         trace1.append(
             go.Scatter(
                 x = df[df['ticker'] == i]['date'], 
@@ -69,8 +64,8 @@ def update_graph_scatter(input_ticker):
         yaxis=dict(
             domain=[0, 1]
         ),
-        height=975,
-        margin={'t':0,'b':0}
+        height=750,
+        margin={'t':20,'b':20}
     )
 
     data = trace1

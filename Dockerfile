@@ -3,6 +3,8 @@ LABEL maintainer="pnak"
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
+ARG av_key
+ENV av_key=$av_key
 
 RUN set -ex \
     && buildDeps=' \
@@ -30,7 +32,6 @@ WORKDIR /app
 RUN pip install -r requirements.txt
 
 RUN /bin/bash db_creation.sh 
-RUN python pull_data.py
 
 ENTRYPOINT ["python"]
 CMD ["plot.py"]
