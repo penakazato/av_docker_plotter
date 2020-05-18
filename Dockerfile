@@ -3,7 +3,6 @@ LABEL maintainer="pnak"
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
-ENV av_key=X9RM83J85A2KGNAC
 
 RUN set -ex \
     && buildDeps=' \
