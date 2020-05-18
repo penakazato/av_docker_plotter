@@ -1,0 +1,7 @@
+SQLAlchemy
+plotly
+dash
+pandas
+numpy
+requests
+pysqlite3
