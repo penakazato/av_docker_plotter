@@ -12,7 +12,7 @@ import os
 
 port = 8090
 debug = True
-file = open('./tickers.txt')
+file = open('./config/tickers.txt')
 tickerList = file.read().split('\n')
 tickerList = [i for i in tickerList if i != '']
 
@@ -30,7 +30,7 @@ app.layout = html.Div([
 
 @app.callback(Output('graph', 'figure'),[Input('ticker_select', 'value')])
 def update_graph_scatter(input_ticker):
-    conn = sqlite3.connect('./fin_app.db')
+    conn = sqlite3.connect('./data/fin_app.db')
     df = pd.read_sql_query('select * from daily_data',conn)
     df['date'] = pd.to_datetime(df['date'])
     df['close'] = pd.to_numeric(df['close'])

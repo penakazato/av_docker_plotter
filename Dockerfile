@@ -31,7 +31,7 @@ COPY . /app
 WORKDIR /app
 RUN pip install -r requirements.txt
 
-RUN /bin/bash db_creation.sh 
+RUN /bin/bash ./scripts/db_creation.sh 
 
 ENTRYPOINT ["python"]
 CMD ["plot.py"]
