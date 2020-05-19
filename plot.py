@@ -18,26 +18,14 @@ file = open('./config/tickers.txt')
 tickerList = file.read().split('\n')
 tickerList = [i for i in tickerList if i != '']
 
+
+################################################################################################
+#### Create Flask Server
+################################################################################################
+
 server = Flask(__name__)
-app = dash.Dash(__name__,server=server)
-app.layout = html.Div([
-        dcc.Dropdown(
-                id='ticker_select',
-                options=[{'label': v, 'value': v} for v in tickerList],
-                multi=True,
-                value='Tickers',
-            ),
-        dcc.Graph(id='graph')
-    ])
-
-
-
-login_manager = LoginManager()
-login_manager.init_app(server)
-login_manager.login_view = "login"
 
 server.config.update(
-    DEBUG = True,
     SECRET_KEY = 'secret_xxx'
 )
 
@@ -49,10 +37,25 @@ class User(UserMixin):
     def __repr__(self):
         return "%d/%s/%s" % (self.id, self.name, self.password)
 
-   
+
+app = dash.Dash(name='app',server=server,url_base_pathname='/app/')
+
+app.layout = html.Div([
+        dcc.Dropdown(
+                id='ticker_select',
+                options=[{'label': v, 'value': v} for v in tickerList],
+                multi=True,
+                value='Tickers',
+            ),
+        dcc.Graph(id='graph')
+    ])
+
+login_manager = LoginManager()
+login_manager.init_app(server)
+login_manager.login_view = "login"
 users = [User(id) for id in range(1, 2)]
 
-@server.route("/login", methods=["GET", "POST"])
+@server.route("/", methods=["GET", "POST"])
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -61,7 +64,7 @@ def login():
             id = username.split('user')[1]
             user = User(id)
             login_user(user)
-            return redirect(request.args.get("next"))
+            return redirect('/app')
         else:
             return abort(401)
     else:
@@ -73,26 +76,19 @@ def login():
         </form>
         ''')
 
-@server.route("/logout")
-@login_required
-def logout():
-    logout_user()
-    return Response('<p>Logged out</p>')
-
-
-@server.errorhandler(401)
-def page_not_found(e):
-    return Response('<p>Login failed</p>')
-    
     
 @login_manager.user_loader
 def load_user(userid):
     return User(userid)
 
 
-@login_required
-@server.route('/',methods=['GET','POST'])
+################################################################################################
+#### Create Dashboard App
+################################################################################################
+
+@server.route("/app", methods=["GET", "POST"])
 @app.callback(Output('graph', 'figure'),[Input('ticker_select', 'value')])
+@login_required
 def update_graph_scatter(input_ticker):
     conn = sqlite3.connect('./data/fin_app.db')
     df = pd.read_sql_query('select * from daily_data',conn)
@@ -102,9 +98,6 @@ def update_graph_scatter(input_ticker):
 
     data = []
     trace1 = []
-
-    if input_ticker is None:
-        input_ticker = ['SPY']
     
     for i in input_ticker:
         trace1.append(
@@ -137,5 +130,6 @@ def update_graph_scatter(input_ticker):
     return {'data': data,'layout' : layout}
 
 
+
 if __name__ == '__main__':
-    server.run(host="0.0.0.0", port=8090)
+    server.run(debug=True, port=port)
